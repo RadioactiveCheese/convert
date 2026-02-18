@@ -1,38 +1,37 @@
 import type { FormatHandler } from "../FormatHandler.ts";
 
-import canvasToBlobHandler from "./canvasToBlob.ts";
-import meydaHandler from "./meyda.ts";
-import htmlEmbedHandler from "./htmlEmbed.ts";
-import FFmpegHandler from "./FFmpeg.ts";
-import pdftoimgHandler from "./pdftoimg.ts";
-import ImageMagickHandler from "./ImageMagick.ts";
-import renameHandler from "./rename.ts";
-import envelopeHandler from "./envelope.ts";
-import svgForeignObjectHandler from "./svgForeignObject.ts";
-import qoiFuHandler from "./qoi-fu.ts";
-import sppdHandler from "./sppd.ts";
-import threejsHandler from "./threejs.ts";
-import sqlite3Handler from "./sqlite.ts";
-import markdownHandler from "./markdown.ts";
-import vtfHandler from "./vtf.ts";
-import jszipHandler from "./jszip.ts";
+type HandlerModule = {
+  default: new () => FormatHandler;
+};
+
+// Keep this list to handlers that resolve cleanly in this environment.
+// Missing optional modules should be added back once their dependencies/files are restored.
+const handlerModulePaths = [
+  "./canvasToBlob.ts",
+  "./meyda.ts",
+  "./htmlEmbed.ts",
+  "./FFmpeg.ts",
+  "./pdftoimg.ts",
+  "./ImageMagick.ts",
+  "./rename.ts",
+  "./svgForeignObject.ts",
+  "./threejs.ts",
+  "./sqlite.ts",
+  "./markdown.ts",
+  "./vtf.ts",
+  "./jszip.ts",
+  "./dxf.ts"
+] as const;
 
 const handlers: FormatHandler[] = [];
-try { handlers.push(new canvasToBlobHandler()) } catch (_) { };
-try { handlers.push(new meydaHandler()) } catch (_) { };
-try { handlers.push(new htmlEmbedHandler()) } catch (_) { };
-try { handlers.push(new FFmpegHandler()) } catch (_) { };
-try { handlers.push(new pdftoimgHandler()) } catch (_) { };
-try { handlers.push(new ImageMagickHandler()) } catch (_) { };
-try { handlers.push(new renameHandler()) } catch (_) { };
-try { handlers.push(new envelopeHandler()) } catch (_) { };
-try { handlers.push(new svgForeignObjectHandler()) } catch (_) { };
-try { handlers.push(new qoiFuHandler()) } catch (_) { };
-try { handlers.push(new sppdHandler()) } catch (_) { };
-try { handlers.push(new threejsHandler()) } catch (_) { };
-try { handlers.push(new sqlite3Handler()) } catch (_) { };
-try { handlers.push(new markdownHandler()) } catch (_) { };
-try { handlers.push(new vtfHandler()) } catch (_) { };
-try { handlers.push(new jszipHandler()) } catch (_) { };
+
+for (const modulePath of handlerModulePaths) {
+  try {
+    const handlerModule = await import(/* @vite-ignore */ modulePath) as HandlerModule;
+    handlers.push(new handlerModule.default());
+  } catch (_) {
+    // Ignore unavailable handlers so the app can still run with partial support.
+  }
+}
 
 export default handlers;
